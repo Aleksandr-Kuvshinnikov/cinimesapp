@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: cinemauser
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: cinemaapi
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cinemauser -d cinemaapi"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    restart: always
+    env_file:
+      - .env
+    environment:
+      # host в DATABASE_URL внутри контейнера должен быть "db", а не "localhost"
+      DATABASE_URL: postgresql+asyncpg://cinemauser:${POSTGRES_PASSWORD:-changeme}@db:5432/cinemaapi
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+volumes:
+  pgdata:

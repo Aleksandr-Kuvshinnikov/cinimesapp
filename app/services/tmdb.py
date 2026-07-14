@@ -1,6 +1,4 @@
 import httpx
-
-
 from app.core.config import settings
 class TMDBService:
     BASE_URL= 'https://api.themoviedb.org/3'
